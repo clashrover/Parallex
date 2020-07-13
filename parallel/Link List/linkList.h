@@ -1,14 +1,78 @@
 #ifndef LINKLIST_H
 #define LINKLIST_H
 
-typedef struct node* Node;
-Node new_Node(void* d);
-typedef struct LinkList* linkList;
-linkList new_List();
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <pthread.h>
 
-void push_back_List(void* data, linkList l);
-void* pop_front_List(linkList l);
+// IMPLEMENTING HAND-IN-HAND Locking //
+// Create a buffer to collect operations, when find, get, iterator is called empty the buffer //
+// by executing the instructions using threads. Buffer consists of insert and delete instructions//
+
+//------------------------------------------------------------------
+
+struct node;
+typedef struct node* Node;
+
+Node new_Node(void* key,void* data);
+
+typedef int (*Compare) (void* key1, void* key2);
+typedef struct buffer* Buffer;
+struct LinkList;
+typedef struct LinkList* linkList;
+void clear_buffer(linkList l);
+
+struct event_node;
+typedef struct event_node* event;
+
+struct buffer;
+
+linkList new_List(Compare c);
+
+int size(linkList l);
+
+//------------------------------------------------------------------
+
+void* insert(void* arg);
+
+void pInsert(void* key, void* data,linkList l);
+
+//------------------------------------------------------------------
+
+void* delete(void* arg);
+
+
+void pDelete(void* key, linkList l);
+
+//------------------------------------------------------------------
+
+void* get(void*key, linkList l);
+
+int has(void*key, linkList l);
+
+//------------------------------------------------------------------
+
 void free_List(linkList l);
-void print_intList(linkList l);
+
+//------------------------------------------------------------------
+
+struct Iterator{
+    linkList list;
+    Node current;
+};
+typedef struct Iterator* iterator; 
+
+iterator new_Iterator(linkList l);
+
+void* next(iterator i);
+
+int hasNext(iterator i);
+
+void free_Iterator(iterator i);
+
+//------------------------------------------------------------------
+
+void clear_buffer(linkList l);
 
 #endif
