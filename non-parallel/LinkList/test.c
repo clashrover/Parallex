@@ -1,6 +1,7 @@
 #include "linkList.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 int int_compare(void* i,void* j){
     if(*(int*)i > *(int*)j){
@@ -14,18 +15,24 @@ int int_compare(void* i,void* j){
 
 int main(){
     linkList l = new_List(int_compare);
-    for(int i=0;i<10;i++){
+    // clock_t t; 
+    // t = clock();
+    for(int i=0;i<100;i++){
         int* x = (int*)malloc(sizeof(int));
         *x=i;
         int* y = (int*)malloc(sizeof(int));
         *y=100*i;
         insert((void*)x,(void*)y, l);
     }
-    //--- Test iterator ---//
+    // t = clock() - t;
+    // double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds 
+    // printf("Time Single threaded took %f seconds to execute \n", time_taken); 
+    
+    // //--- Test iterator ---//
     // iterator i = new_Iterator(l);
     // while(hasNext(i)==1){
     //     int* d = (int*) next(i);
-    //     printf("%d\n",*d); 
+    //     // printf("%d\n",*d); 
     // }
     // free_Iterator(i);
 
@@ -49,24 +56,27 @@ int main(){
     // free(d);
 
     //--- Test delete ---//
-    // int* i1=(int*)malloc(sizeof(int));
-    // *i1=0;
-    // while(size(l)>0){
-    //     iterator i = new_Iterator(l);
-    //     while(hasNext(i)==1){
-    //         int* d = (int*) next(i);
-    //         printf("%d ",*d); 
-    //     }
-    //     printf("\n");
-    //     free_Iterator(i);
-    //     void* dat = delete((void*)i1,l);
-    //     if(dat==NULL){
-    //         break;
-    //     }
-    //     free(dat);
-    //     *i1 = *i1 +1;
-    // }
-    // free(i1);
+    clock_t t; 
+    t = clock();
+    int* i1=(int*)malloc(sizeof(int));
+    *i1=0;
+    while(*i1<100){
+        void*d = delete((void*)i1,l);
+        free(d);
+        *i1 = *i1 +2;
+    }
+    free(i1);
+    t = clock() - t;
+    double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds 
+    printf("Time Single threaded took %f seconds to execute \n", time_taken); 
+    
+    iterator i = new_Iterator(l);
+    while(hasNext(i)==1){
+        int* d = (int*) next(i);
+        printf("%d ",*d); 
+    }
+    printf("\n");
+    free_Iterator(i);
 
     // testing of iterator done above //
     free_List(l);

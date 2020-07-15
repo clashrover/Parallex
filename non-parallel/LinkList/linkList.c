@@ -43,20 +43,16 @@ int size(linkList l){
 }
 
 void insert(void* key, void* data,linkList l){
-    Node n = new_Node(key,data);
-    if(l->size==0){
-        l->head->next = n;
-        l->size++;
-        return;
-    }
     Node prev=l->head;
-    Node curr=l->head->next;
-    while(l->compare(curr->key,key)<0){
-        prev = curr;
-        curr=curr->next;
-        if(curr==NULL){
-            break;
+    Node n = new_Node(key,data);
+    Node curr;
+    while((curr = prev->next)!=NULL){
+        if(l->compare(curr->key,key)>0){
+            prev->next = n;
+            n->next = curr;
+            l->size++;
         }
+        prev= curr;
     }
     prev->next = n;
     n->next = curr;
@@ -65,32 +61,21 @@ void insert(void* key, void* data,linkList l){
 
 void* delete(void* key, linkList l){
     Node prev = l->head;
-    Node curr = l->head->next;
-    if(l->size == 0){
-        perror("Delete: List empty\n");
-        return NULL;
-    }
-    while(l->compare(curr->key,key)<0){
-        prev = curr;
-        curr=curr->next;
-        if(curr==NULL){
-            perror("Delete: key not found\n");
-            return NULL;
+    Node curr;
+    while((curr = prev->next) != NULL){
+        if(l->compare(curr->key,key)==0){
+            prev->next = curr->next;
+            curr->next = NULL;
+            l->size--;
+            free(curr->key);
+            curr->key = NULL;
+            void* data = curr->data;
+            free(curr);
+            return data;
         }
+        prev = curr;
     }
-    if(l->compare(curr->key,key)!=0){
-        perror("Delete: key not found\n");
-        return NULL;
-    }
-    prev->next = curr->next;
-    curr->next = NULL;
-    free(curr->key);
-    curr->key = NULL;
-    void* data = curr->data;
-    free(curr);
-    curr = NULL;
-    l->size--;
-    return data;
+    return NULL;
 }
 
 void* get(void*key, linkList l){

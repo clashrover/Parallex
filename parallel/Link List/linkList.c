@@ -47,7 +47,7 @@ typedef struct event_node* event;
 
 struct buffer{
     int size;
-    event array[10];
+    event array[3];
     int pos;
 };
 
@@ -77,37 +77,30 @@ void* insert(void* arg){
     linkList l = e->list;
     Node prev=l->head;
     pthread_mutex_lock(&prev->lock);
-    printf("Thread number lock prev %ld\n", pthread_self());
     Node n = new_Node(key,data);
-    Node curr;
+    Node curr=NULL;
     while((curr = prev->next)!=NULL){
         pthread_mutex_lock(&curr->lock);
-        printf("Thread number lock curr %ld\n", pthread_self());
         if(l->compare(curr->key,key)>0){
             prev->next = n;
             n->next = curr;
             l->size++;
-            // printf("Thread number %ld\n", pthread_self());
-            printf("Thread number unlock prev %ld\n", pthread_self());
             pthread_mutex_unlock(&prev->lock);
-            printf("Thread number unlock curr ending %ld\n", pthread_self());
             pthread_mutex_unlock(&curr->lock);
             pthread_exit(NULL);
         }
-        printf("Thread number unlock prev %ld\n", pthread_self());
         pthread_mutex_unlock(&prev->lock);
         prev= curr;
     }
     prev->next = n;
     n->next = curr;
     l->size++;
-    printf("Thread number unlock prev ending %ld\n", pthread_self());
     pthread_mutex_unlock(&prev->lock);
     pthread_exit(NULL);
 }
 
 void pInsert(void* key, void* data,linkList l){
-    if(l->buf->size <10){
+    if(l->buf->size <3){
         event e = (event)malloc(sizeof(struct event_node));
         e->type=1;
         e->key = key;
@@ -132,42 +125,39 @@ void pInsert(void* key, void* data,linkList l){
 //------------------------------------------------------------------
 
 void* delete(void* arg){
+    Node prev,curr;
     event e = (event)arg;
     void* key = e->key;
     linkList l = e->list;
-
-    Node prev = l->head;
-    Node curr = l->head->next;
-    if(l->size == 0){
-        perror("Delete: List empty\n");
-        pthread_exit(NULL);
-    }
-    while(l->compare(curr->key,key)<0){
-        prev = curr;
-        curr=curr->next;
-        if(curr==NULL){
-            perror("Delete: key not found\n");
+    prev = l->head;
+    pthread_mutex_lock(&prev->lock);
+    // printf("lock on head acquired by %ld\ , looking for key %d \n",pthread_self(),*(int*)key);
+    while((curr = prev->next) != NULL){
+        pthread_mutex_lock(&curr->lock);
+        // printf("lock on %d node acquired by %ld , looking for key %d\n",*(int*)curr->key,pthread_self(),*(int*)key);
+        if(l->compare(curr->key,key)==0){
+            prev->next = curr->next;
+            curr->next = NULL;
+            l->size--;
+            pthread_mutex_unlock(&prev->lock);
+            pthread_mutex_unlock(&curr->lock);
+            free(curr->key);
+            free(curr->data);
+            free(curr);
+            free(key);
             pthread_exit(NULL);
         }
+        pthread_mutex_unlock(&prev->lock);
+        prev = curr;
     }
-    if(l->compare(curr->key,key)!=0){
-        perror("Delete: key not found\n");
-        pthread_exit(NULL);
-    }
-    prev->next = curr->next;
-    curr->next = NULL;
-    free(curr->key);
-    curr->key = NULL;
-    void* data = curr->data;
-    free(curr);
-    curr = NULL;
-    l->size--;
-    pthread_exit(data);
+    pthread_mutex_unlock(&prev->lock);
+    free(key);
+    pthread_exit(NULL);
 }
 
 
 void pDelete(void* key, linkList l){
-    if(l->buf->size <10){
+    if(l->buf->size <3){
         event e = (event)malloc(sizeof(struct event_node));
         e->type=2;
         e->key = key;
@@ -242,31 +232,21 @@ void free_List(linkList l){
     Node n = l->head;
     if(n==NULL){
         free(l->buf);
-        l->buf = NULL;
         free(l);
-        l=NULL;
         return;
     }
     if(n->next==NULL){
         free(n->data);
-        n->data = NULL;
         free(n->key);
-        n->key = NULL;
         free(n);
-        n=NULL;
         free(l->buf);
-        l->buf = NULL;
         free(l);
-        l=NULL;
         return;
     }
     free(n->data);
-    n->data = NULL;
     free(n->key);
-    n->key = NULL;
     l->head = n->next;
     free(n);
-    n=NULL;
     free_List(l);
 }
 
@@ -312,33 +292,38 @@ void free_Iterator(iterator i){
 
 void clear_buffer(linkList l){
     Buffer b = l->buf;
-    if(b->size == 0){
+    int s = l->buf->size;
+    if(s == 0){
         return;
     }
-    int i=0;
-    pthread_t threads[b->size];
-    int iret[b->size];
-    while(i<b->size){
+    // printf("buffer state is : ");
+    // for(int i=0;i<s;i++){
+    //     printf("%d  ", *(int*)b->array[i]->key);
+    // }
+    // printf("\n");
+    pthread_t threads[s];
+    int iret[s];
+    for(int i=0;i<s;i++){
         event e = b->array[i];
+        // printf("in clear buffer, evet key is %d\n",*(int*)e->key);
         if(e->type == 1){
             iret[i] = pthread_create(&threads[i],NULL,insert,(void*)e);
-        }else{
+        }
+        else{
             iret[i] = pthread_create(&threads[i],NULL,delete,(void*)e);
         }
         if(iret[i] != 0) {
             printf("Error: pthread_create() failed\n");
             exit(EXIT_FAILURE);
         }
-        i++;
     }
-    void** d;
-    for(int j=0;j<b->size;j++){
-        pthread_join(threads[j],d);
+    for(int i=0;i<s;i++){
+        pthread_join(threads[i],NULL);
     }
-    for(int j=0;j<b->size;j++){
-        free(b->array[j]);
-        b->array[j]=NULL;
+    for(int i=0;i<s;i++){
+        free(b->array[i]);
     }
     b->size = 0;
     b->pos = 0;
+    return;
 }
