@@ -15,8 +15,8 @@ int int_compare(void* i,void* j){
 
 int main(){
     linkList l = new_List(int_compare);
-    // clock_t t; 
-    // t = clock(); 
+    clock_t t; 
+    t = clock(); 
     for(int i=0;i<1000;i++){
         int* x = (int*)malloc(sizeof(int));
         *x=i;
@@ -65,6 +65,10 @@ int main(){
         // free(i1);
         i2+=2;
     }
+    clear_buffer(l);
+    t = clock() - t;
+    double time_taken = ((double)t)/CLOCKS_PER_SEC; // in seconds 
+    printf("Time Multi threaded took %f seconds to execute \n", time_taken); 
 
     iterator i = new_Iterator(l);
     while(hasNext(i)==1){

@@ -15,9 +15,9 @@ int int_compare(void* i,void* j){
 
 int main(){
     linkList l = new_List(int_compare);
-    // clock_t t; 
-    // t = clock();
-    for(int i=0;i<100;i++){
+    clock_t t; 
+    t = clock();
+    for(int i=0;i<1000;i++){
         int* x = (int*)malloc(sizeof(int));
         *x=i;
         int* y = (int*)malloc(sizeof(int));
@@ -56,11 +56,11 @@ int main(){
     // free(d);
 
     //--- Test delete ---//
-    clock_t t; 
-    t = clock();
+    // clock_t t; 
+    // t = clock();
     int* i1=(int*)malloc(sizeof(int));
     *i1=0;
-    while(*i1<100){
+    while(*i1<1000){
         void*d = delete((void*)i1,l);
         free(d);
         *i1 = *i1 +2;
